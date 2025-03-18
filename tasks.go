@@ -4,32 +4,31 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"strings"
 )
 
 type Task struct {
-	ID    int
-	Title string
-	Done  bool
+	ID     int
+	Title  string
+	Status string
 }
 type Tasks map[int]Task
 
-func (t Tasks) PrintAllTasks() {
-	if len(t) == 0 {
+func (t *Tasks) PrintAllTasks() {
+	if len(*t) == 0 {
 		fmt.Print("\nNo tasks for today. Do you want add a new one?\n")
 		return
 	}
 
 	fmt.Print("\nHere your tasks:\n\n")
-	for k, v := range t {
-		fmt.Printf("%v. %v", k, v.Title)
-		if v.Done {
-			fmt.Print("✓\n")
-		}
+	for k, v := range *t {
+		title := strings.TrimSpace(v.Title)
+		fmt.Printf("Task %v. %v. Status: %s\n", k, title, v.Status)
 	}
 }
 
-func (t Tasks) Add(id int, task Task) {
-	t[id] = task
+func (t *Tasks) Add(task Task) {
+	(*t)[task.ID] = task
 	fmt.Print("\nNew task was added\n")
 
 	err := t.SaveToFile("tasks.json")
@@ -38,15 +37,15 @@ func (t Tasks) Add(id int, task Task) {
 	}
 }
 
-func (t Tasks) Edit(id int, task Task) {
-	_, ok := t[id]
+func (t *Tasks) Edit(task Task) {
+	_, ok := (*t)[task.ID]
 	if !ok {
 		fmt.Println("No task found")
 		return
 	}
 
-	t[id] = task
-	fmt.Printf("\nTask %d was successfully updated to: %s", id, task.Title)
+	(*t)[task.ID] = task
+	fmt.Printf("\nTask %d was successfully updated to: %s", task.ID, task.Title)
 
 	err := t.SaveToFile("tasks.json")
 	if err != nil {
@@ -54,9 +53,15 @@ func (t Tasks) Edit(id int, task Task) {
 	}
 }
 
-func (t Tasks) Remove(id int) {
-	delete(t, id)
-	fmt.Printf("\nTask %v successfully deleted\n", id)
+func (t *Tasks) Remove(id *int, taskID int) {
+	delete(*t, taskID)
+	fmt.Printf("\nTask %v successfully deleted\n", *id)
+
+	*id--
+	for i := range *t {
+		task := (*t)[i]
+		task = Task{ID: task.ID - 1, Title: task.Title, Status: task.Status}
+	}
 
 	err := t.SaveToFile("tasks.json")
 	if err != nil {
@@ -64,9 +69,10 @@ func (t Tasks) Remove(id int) {
 	}
 }
 
-func (t Tasks) GetMuxID() int {
+func (t *Tasks) GetMuxID() int {
 	maxID := 0
-	for id := range t {
+	for i := range *t {
+		id := (*t)[i].ID
 		if id > maxID {
 			maxID = id
 		}
@@ -87,7 +93,7 @@ func (t *Tasks) SaveToFile(filename string) error {
 		return fmt.Errorf("unable to encode file: %v", err)
 	}
 
-	fmt.Println("\nTasks saved successfully.")
+	fmt.Println("\n\nTasks saved successfully.")
 	return nil
 }
 

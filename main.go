@@ -12,12 +12,13 @@ func main() {
 	defer out.Flush()
 
 	tasks := Tasks{}
-	id := tasks.GetMuxID() + 1
 
 	err := tasks.LoadFromFile("tasks.json")
 	if err != nil {
 		fmt.Println("No tasks file found, starting with an empty list.")
 	}
+
+	id := tasks.GetMuxID() + 1
 
 	for {
 		fmt.Print("\nChoose an option:\n\n" +
@@ -36,8 +37,8 @@ func main() {
 		case "c":
 			fmt.Print("\nWhat do you want to do? ")
 			taskTitle, _ := in.ReadString('\n')
-			task := Task{ID: id, Title: taskTitle, Done: false}
-			tasks.Add(id, task)
+			task := Task{ID: id, Title: taskTitle, Status: "pending"}
+			tasks.Add(task)
 			id++
 		case "e":
 			var taskId int
@@ -64,12 +65,12 @@ func main() {
 			fmt.Scanln(&markDone)
 
 			if markDone == "y" || markDone == "Y" {
-				task = Task{ID: taskId, Title: taskTitle, Done: true}
+				task = Task{ID: taskId, Title: taskTitle, Status: "completed"}
 			} else {
-				task = Task{ID: taskId, Title: taskTitle, Done: false}
+				task = Task{ID: taskId, Title: taskTitle, Status: "pending"}
 			}
 
-			tasks.Edit(taskId, task)
+			tasks.Edit(task)
 		case "d":
 			var taskId int
 			tasks.PrintAllTasks()
@@ -80,7 +81,7 @@ func main() {
 				continue
 			}
 
-			tasks.Remove(taskId)
+			tasks.Remove(&id, taskId)
 		case "q":
 			tasks.PrintAllTasks()
 			return
